@@ -9,7 +9,6 @@ from tqdm.auto import tqdm
 import numpy as np
 import pandas as pd
 
-
 model_device = 'mps' if torch.backends.mps.is_available() else 'cuda' if torch.backends.cuda.is_available() else 'cpu'
 clip_model = CLIPModel.from_pretrained('openai/clip-vit-base-patch32')
 clip_model = clip_model.to(model_device)
