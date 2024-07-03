@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "playground"
+version = "0.1.0"
+description = ""
+authors = ["Oscar Moll <orm@csail.mit.edu>"]
+license = "CC BY"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "<2"
+scipy = "^1.14.0"
+pillow = "^10.4.0"
+scikit-learn = "^1.5.1"
+pandas = "^2.2.2"
+pyarrow = "^16.1.0"
+torch = "^2.3.1"
+torchvision = "^0.18.1"
+transformers = "^4.42.3"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
