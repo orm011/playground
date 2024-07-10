@@ -32,27 +32,26 @@ def transform(image_tuple):
 
 dataset = torchvision.datasets.ImageFolder('./data/objectnet/images', loader=loader, transform=transform)
 def get_image_vectors_iter(dataset):
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=False, num_workers=1)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=20, shuffle=False, num_workers=1)
 
     for batch in dataloader:
         pixel_values = batch[0]['pixel_values'].to(model_device)
         with torch.no_grad():
             image_vectors = clip_model.get_image_features(pixel_values=pixel_values)
-            image_vectors = F.normalize(image_vectors).cpu().numpy()
-
+            # don't normalize for now
+            image_vectors = [vec for vec in image_vectors.cpu().detach().numpy()]
         output_batch = batch[0].copy()
         del output_batch['pixel_values']
         output_batch['image_vectors'] = image_vectors
         yield output_batch
 
 
-def extract_image_vectors():
+def extract_image_vectors(dataset):
     acc = {'label': [], 'path':[], 'image_vectors': []}
     for batch in tqdm(get_image_vectors_iter(dataset)):
         acc['label'].append(batch['label'])
         acc['path'].append(batch['path'])
         acc['image_vectors'].append(batch['image_vectors'])
 
-    df = pd.DataFrame({'label':sum(acc['label'], start=[]), 'path':sum(acc['path'], start=[])})
-    image_vectors = np.concatenate(acc['image_vectors'], axis=0)
-    return df, image_vectors
+    df = pd.DataFrame({'label':sum(acc['label'], start=[]), 'path':sum(acc['path'], start=[]), 'vectors':sum(acc['image_vectors'], start=[])})
+    return df
