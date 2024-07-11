@@ -1,15 +1,8 @@
 import torch
 import numpy as np
-from torch.utils.data import DataLoader
-from torch.utils.data import TensorDataset
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as opt
-from .basic_trainer import BasicTrainer
-import numpy as np
-import pandas as pd
-import math
-
+import torch.optim
 
 class LinearModel:
     def __init__(self, *,
@@ -18,8 +11,9 @@ class LinearModel:
          regularizer_vector : np.ndarray | None = None,
          reg_vector_lambda : float = 1.0,
          class_weight : str = 'balanced',
+         fit_intercept : bool = True,
          verbose : bool = False,
-         max_iter : int = 100
+         max_iter : int = 10
         ):
 
         self.regularizer_vector = torch.from_numpy(regularizer_vector).float() if regularizer_vector is not None else None
@@ -27,6 +21,7 @@ class LinearModel:
         self.label_loss_type = label_loss_type
         self._module : nn.Linear | None = None
         self.max_iter = max_iter
+        self.fit_intercept = fit_intercept
         self.verbose = verbose
         self.reg_norm_lambda = reg_norm_lambda
         self.reg_vector_lambda = reg_vector_lambda
@@ -72,8 +67,6 @@ class LinearModel:
             loss_regularizer_vector = torch.tensor(0.)
 
         loss_regularizer_vector = self.reg_vector_lambda * loss_regularizer_vector
-#       normalized_weight = F.normalize(self.weight, dim=-1)
-#       loss_norm = self.reg_norm_lambda *  ( torch.cosh( (self.weight @ self.weight).log() ) - 1. )
         loss_labels = item_losses.sum()
         total_loss = loss_labels + loss_norm + loss_regularizer_vector
 
@@ -86,33 +79,27 @@ class LinearModel:
         assert not (total_loss.isinf() or total_loss.isnan()), f'{total_loss=}'
         return ans
 
-    def training_step(self, batch, batch_idx):
-        losses = self._step(batch)
-        return losses
-
-    def validation_step(self, batch, batch_idx):
-        losses = self._step(batch)
-        return losses
-
-    def configure_optimizers(self):
-        return opt.LBFGS(self._module.parameters(), max_iter=self.max_iter, tolerance_change=1e-6, line_search_fn='strong_wolfe')
-
-    def fit(self, X, y):
+    def fit(self, X: np.ndarray, y: np.ndarray):
         self._module = nn.Linear(X.shape[1], 1, bias=True)
-        trainer_ = BasicTrainer(mod=self, max_epochs=1, verbose=self.verbose)
+        self._module.train()
+        X = torch.from_numpy(X).float()
+        y = torch.from_numpy(y).float()
 
-        assert X.shape[0] > 0
-        ds = TensorDataset(torch.from_numpy(X), torch.from_numpy(y))
-        dl = DataLoader(ds, batch_size=X.shape[0], shuffle=True)
-        losses_ = trainer_.fit(dl)
-        if self.verbose:
-            df = pd.DataFrame.from_records(losses_)
-            agg_df= df.groupby('k').mean()
-            print(agg_df)
-        return losses_
+        opt = torch.optim.LBFGS(self._module.parameters(), max_iter=self.max_iter,
+                                tolerance_change=1e-6, line_search_fn='strong_wolfe')
+        def closure():
+            opt.zero_grad()
+            ret = self._step((X,y))
+            ret['loss'].backward()
+            return ret['loss']
+
+        with torch.autograd.set_detect_anomaly(True):
+            for _ in range(self.max_iter):
+                opt.step(closure)
 
     def decision_function(self, X):
         assert self._module
+        self._module.eval()
         with torch.no_grad():
             scores = self._module(torch.from_numpy(X))
             return scores.detach().cpu().numpy()
