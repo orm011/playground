@@ -4,9 +4,7 @@ import torch
 import torchvision
 
 from transformers import CLIPProcessor, CLIPModel
-import torch.nn.functional as F
 from tqdm.auto import tqdm
-import numpy as np
 import pandas as pd
 
 model_device = 'mps' if torch.backends.mps.is_available() else 'cuda' if torch.backends.cuda.is_available() else 'cpu'
@@ -30,7 +28,7 @@ def transform(image_tuple):
         'path': path
     }
 
-dataset = torchvision.datasets.ImageFolder('./data/objectnet/images', loader=loader, transform=transform)
+objectnet_dataset = torchvision.datasets.ImageFolder('./data/objectnet/images', loader=loader, transform=transform)
 def get_image_vectors_iter(dataset):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=20, shuffle=False, num_workers=1)
 

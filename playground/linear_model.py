@@ -40,7 +40,10 @@ class LinearModel:
         assert pos_total > 0 and neg_total > 0
 
         if self.class_weight == 'balanced':
+                # assign weights like sklearn does
                 weights = y.shape[0] / (2 * bincount)
+        elif self.class_weight is None:
+                assert False, 'not implemented'
         else:
             assert False, 'unknown pos weight type'
 
