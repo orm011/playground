@@ -17,7 +17,7 @@ class LinearModel:
         ):
 
         self.regularizer_vector = torch.from_numpy(regularizer_vector).float() if regularizer_vector is not None else None
-        assert label_loss_type in ['ce_loss', 'hinge_loss', 'hinge_squared_loss']
+        assert label_loss_type in ['logistic_loss', 'hinge_loss', 'hinge_squared_loss']
         self.label_loss_type = label_loss_type
         self._module : nn.Linear | None = None
         self.max_iter = max_iter
@@ -49,7 +49,7 @@ class LinearModel:
 
         point_weights = weights[y.int()]
 
-        if self.label_loss_type == 'ce_loss':
+        if self.label_loss_type == 'logistic_loss':
             error_loss = F.binary_cross_entropy_with_logits(logits, y, weight=None,
                                         reduction='none', pos_weight=None)
         elif self.label_loss_type in ['hinge_loss', 'hinge_squared_loss']:
