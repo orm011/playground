@@ -24,6 +24,7 @@ plotnine = "^0.13.6"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
+ruff = "^0.5.1"
 
 [build-system]
 requires = ["poetry-core"]
